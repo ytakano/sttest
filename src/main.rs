@@ -1,28 +1,28 @@
 extern crate session_types;
-use session_types::*;
+use session_types as S;
 use std::thread;
 
-type Client = Send<u64, Choose<Recv<u64, Eps>, Recv<bool, Eps>>>;
-type Server = <Client as HasDual>::Dual;
+type Client = S::Send<u64, S::Choose<S::Recv<u64, S::Eps>, S::Recv<bool, S::Eps>>>;
+type Server = <Client as S::HasDual>::Dual;
 
 enum Op {
     Square,
     Even,
 }
 
-fn server(c: Chan<(), Server>) {
+fn server(c: S::Chan<(), Server>) {
     let (c, n) = c.recv();
     match c.offer() {
-        Branch::Left(c) => {
+        S::Branch::Left(c) => {
             c.send(n * n).close();
         }
-        Branch::Right(c) => {
+        S::Branch::Right(c) => {
             c.send(n & 1 == 0).close();
         }
     }
 }
 
-fn client(c: Chan<(), Client>, n: u64, op: Op) {
+fn client(c: S::Chan<(), Client>, n: u64, op: Op) {
     let c = c.send(n);
     match op {
         Op::Square => {
@@ -45,7 +45,7 @@ fn client(c: Chan<(), Client>, n: u64, op: Op) {
 }
 
 fn main() {
-    let (server_chan, client_chan) = session_channel();
+    let (server_chan, client_chan) = S::session_channel();
     let srv_t = thread::spawn(move || server(server_chan));
     let cli_t = thread::spawn(move || client(client_chan, 11, Op::Even));
 
